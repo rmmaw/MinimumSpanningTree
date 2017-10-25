@@ -1,0 +1,124 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document: default
+---
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
+
+```{r}
+
+####### Matrix Multiplication  #######
+rm(list=ls())
+library(optrees)
+library(igraph)
+library(qgraph)
+n <- 10
+d <- runif(n*n)
+d[d < 0.80] <- NA
+d <- matrix(d,nrow=n,ncol=n)
+diag(d) <- NA 
+d[upper.tri(d)] = t(d)[upper.tri(d)] 
+
+print("Two matrices below should match ")
+print(Cmat2ArcList(1:n,d,TRUE))
+
+AdjMatrix2List <- function (d) { 
+  x <- list(NULL, c("head","tail","weight"))
+  ds <- matrix(ncol = 3, dimnames = x)
+  
+  for (i in 1:n){
+    for (l in 1:n){
+      if (!is.na(d[i,l])){
+        ds <- rbind(ds,c(i,l,d[i,l]))
+      }
+    }
+  }
+  ds <- ds[-1,]
+  return (ds) 
+}
+ds <- AdjMatrix2List(d)
+print(ds)
+```
+
+```{r}
+##### MST ######
+n <- 50
+x <- round(runif(n)*1000) 
+y <- round(runif(n)*1000) 
+
+
+d <- runif(n*n)
+d <- matrix(d,nrow=n,ncol=n) #reshape the vecteor
+for (i in 1:n){
+    for (l in 1:n){
+        d[i,l] <- sqrt( (y[i]-y[l])^2 +(x[i]-x[l])^2 ) 
+      }
+}
+ds <- AdjMatrix2List(d)
+ds.mst <- msTreePrim(1:n,ds)
+print(str(ds.mst))
+
+plot.mst <- function (arcList) { 
+  for (i in 1:nrow(ds.mst$tree.arcs)){
+    segments(x[ds.mst$tree.arcs[i,1]], 
+             y[ds.mst$tree.arcs[i,1]], x1=x[ds.mst$tree.arcs[i,2]], 
+             y1=y[ds.mst$tree.arcs[i,2]])
+  }
+  }
+plot(x,y,pch=16)
+plot.mst (ds.mst$tree.arcs)
+```
+
+```{r}
+##### Hostile Agents #######
+cat(paste("The agents that know eachother are connected on an undirected graph, \n the probability of the message getting intercepted is the edge weight \n between the graph.  We would want to minimize the chances that the \n  message gets intercepted. You could assign all the agents arbitrary equal \n distances, and perfrom a MST  based on the probability. This will gaurantee \n that everyone recieves the message in the least risky way possible. The \n efficiency for MST is O(nlogn))"))
+```
+
+```{r}
+##### 1693 Analytics #######
+s.head <- c(1,2,7,4,1,3,6,4,1,4,9)
+s.tail<-  c(2,3,4,5,6,7,7,8,9,10,10)
+s.nodesneg <- -c(90,15,14,20,90,5,25,20,90,20,30)
+s.nodes <- c(90,15,5,20,21,25,14,28,30,45)
+
+#Earliest Start time
+est<-cbind(s.head,s.tail,s.nodesneg)
+ear_start<-getShortestPathTree(1:10,est,algorithm = "Bellman-Ford")$distances
+ear_start<- -ear_start
+#Earliest Finish time 
+ear_fin<- ear_start + s.nodes
+
+#Earliest Total Completion Time 
+comp_time<-max(ear_fin)
+
+#Latest fin Time 
+s.tail<-  c(1,2,7,4,1,3,6,4,1,4,9,5,8,10)
+s.head <- c(2,3,4,5,6,7,7,8,9,10,10,11,11,11)
+s.nodesneg <- -c(15,5,20,21,25,14,14,28,30,45,45,0,0,0)
+s.nodes <- c(90,15,5,20,21,25,14,28,30,45)
+lft <- cbind(s.head,s.tail,s.nodesneg)
+Latest_fin_time <-getShortestPathTree(1:11,lft,source.node = 11,
+                                      algorithm = "Bellman-Ford")$distances[-11]
+Latest_fin_time<- Latest_fin_time + comp_time
+# Latest start Time
+Latest_start_time<- Latest_fin_time - s.nodes
+#Latest_fin_time <- -Latest_fin_time
+
+# Slack 
+slack <- abs(Latest_fin_time - ear_fin)
+slack_1 <- abs(Latest_start_time - ear_start)
+print("The critical path is A,D,F,G,J. The nodes that have flexibilty are, B,C,E,H,I")
+cat("My earliest start time is ",ear_start)
+cat("My earliest finish time is",ear_fin)
+cat("My latest start time is",Latest_start_time)
+cat("My latest finish time is",Latest_fin_time)
+cat("My total completion time is",comp_time)
+cat("My slack for each stage respectively is",slack)
+cat(paste("The earliest day of completion is",as.Date("2017-11-01") + comp_time))
+
+```
